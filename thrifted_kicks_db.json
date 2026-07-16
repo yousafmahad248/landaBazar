@@ -1,0 +1,33 @@
+{
+  "users": [
+    {
+      "id": "admin-1",
+      "email": "admin@thriftedkicks.com",
+      "name": "Thrifted Kicks Admin",
+      "phone": "+923001234567",
+      "isAdmin": true,
+      "createdAt": "2026-07-14T20:34:36.545Z"
+    },
+    {
+      "id": "usr-1784061377218-0m9mk",
+      "email": "yousafmahad248@gmail.com",
+      "name": "yousaf mahad",
+      "phone": "+923419712514",
+      "isAdmin": false,
+      "createdAt": "2026-07-14T20:36:17.218Z",
+      "passwordHash": "$2b$10$of.tZWlvaDbNdfi9n8gTCOtGcwd9FS1gqmyLE6JDVP3VFZwA3fAfK"
+    },
+    {
+      "id": "usr-1784062009323-rg2nh",
+      "email": "mahadshah571@gmail.com",
+      "name": "Mahad yousaf",
+      "phone": "03249576615",
+      "isAdmin": false,
+      "createdAt": "2026-07-14T20:46:49.323Z",
+      "passwordHash": "$2b$10$3o4TH8VCmLYL9rX7e1oAM.vQHbJv/htQmAih8lC3GvKw7Kxv05pUq"
+    }
+  ],
+  "products": [],
+  "categories": [],
+  "wishlist": []
+}

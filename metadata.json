@@ -1,0 +1,6 @@
+{
+  "name": "Thrifted Kicks",
+  "description": "A modern, premium e-commerce platform for high-quality second-hand and thrifted shoes with user wishlist, WhatsApp checkout, and an Admin dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
