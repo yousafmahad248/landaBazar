@@ -22,7 +22,7 @@ export const ContactUs: React.FC = () => {
       a: "Every single shoe listed on Thrifted Kicks is 100% authentic. We have an expert detailing and verification crew who cross-examine stitch density, material textures, serial tags, and construction shapes to filter out replica products."
     },
     {
-      q: "What clean and hygiene hygiene procedures do you use?",
+      q: "What clean and hygiene procedures do you use?",
       a: "Hygiene is our highest priority. All shoes undergo a comprehensive 4-step processing cycle: multi-step organic washing, high-temperature steam cleaning at 130°C, UV-C sanitization, and athletic deodorizing. They arrive thoroughly disinfected and fresh-scented."
     },
     {
