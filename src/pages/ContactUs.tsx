@@ -14,6 +14,8 @@ export const ContactUs: React.FC = () => {
     }
   };
 
+  
+
   const faqs = [
     {
       q: "Are these shoes authentic or replicas?",
