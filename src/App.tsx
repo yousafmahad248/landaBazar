@@ -43,6 +43,7 @@ export default function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/sell" element={<SellShoes />} />
+              <Route path="/edit/:id" element={<SellShoes />} />
               <Route path="/admin" element={<AdminDashboard />} />
               
               {/* Fallback wildcard redirect to home */}

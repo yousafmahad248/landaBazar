@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import { ShoppingBag, Key, Mail, RefreshCw, AlertCircle } from 'lucide-react';
+import { ShoppingBag, Key, Mail, RefreshCw, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, user } = useApp();
@@ -9,6 +9,7 @@ export const Login: React.FC = () => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -22,21 +23,17 @@ export const Login: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      // Determine redirection based on role
-      // Wait a tiny moment for context state sync
-      setTimeout(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-          // Check if admin email
-          if (email.toLowerCase() === 'admin@thriftedkicks.com') {
-            navigate('/admin');
-          } else {
-            navigate('/profile');
-          }
-        }
-      }, 300);
+      console.log('🔐 Attempting login for:', email);
+      const loggedInUser = await login(email, password);
+      console.log('✅ Login successful!');
+      
+      if (loggedInUser.isAdmin) {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err: any) {
+      console.error('❌ Login error:', err);
       setError(err.message || 'Invalid email or password.');
     } finally {
       setLoading(false);
@@ -96,14 +93,28 @@ export const Login: React.FC = () => {
             <label className="text-[10px] text-gray-500 uppercase tracking-wider font-mono font-bold flex items-center gap-1">
               <Key className="w-3.5 h-3.5 text-brand-orange" /> Password
             </label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-200 focus:border-brand-orange text-gray-900 text-sm rounded px-4 py-3.5 focus:outline-none transition-all font-sans"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 focus:border-brand-orange text-gray-900 text-sm rounded px-4 py-3.5 pr-12 focus:outline-none transition-all font-sans"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-orange transition-colors cursor-pointer"
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
+            </div>
           </div>
 
           <button

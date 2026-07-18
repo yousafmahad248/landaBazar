@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { ProductCard } from '../components/ProductCard';
-import { User, Phone, Mail, Edit3, Save, CheckCircle2, AlertCircle, Eye, LogOut, Clock, Heart } from 'lucide-react';
+import { User, Phone, Mail, Edit3, Save, CheckCircle2, AlertCircle, Eye, LogOut, Clock, Heart, Shield, Crown, Package, Plus } from 'lucide-react';
 import { Product } from '../types';
 
 export const UserProfile: React.FC = () => {
-  const { user, products, recentlyViewed, logout, updateProfile } = useApp();
+  const { user, products, recentlyViewed, logout, updateProfile, deleteProduct } = useApp();
   const navigate = useNavigate();
 
   const [name, setName] = useState('');
@@ -34,6 +34,18 @@ export const UserProfile: React.FC = () => {
     .map(id => products.find(p => p.id === id))
     .filter((p): p is Product => !!p);
 
+  const myProducts = products.filter(p => p.sellerId === user?.id);
+
+  const handleDeleteProduct = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this listing?')) {
+      try {
+        await deleteProduct(id);
+      } catch (err: any) {
+        alert('Failed to delete product');
+      }
+    }
+  };
+
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage({ type: '', text: '' });
@@ -51,8 +63,7 @@ export const UserProfile: React.FC = () => {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    logout(navigate);
   };
 
   if (!user) return null;
@@ -81,17 +92,47 @@ export const UserProfile: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         {/* Profile Card / Edit Details */}
         <div className="lg:col-span-4 bg-white border border-gray-200/60 rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm">
-          <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
-            <div className="w-16 h-16 rounded-full bg-brand-orange/15 border border-brand-orange/30 text-brand-orange flex items-center justify-center font-display font-black text-2xl">
-              {user.name.charAt(0).toUpperCase()}
+            <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
+              <div className={`w-16 h-16 rounded-full border-2 flex items-center justify-center font-display font-black text-2xl ${
+                user.isAdmin 
+                  ? 'bg-gradient-to-br from-brand-orange to-orange-600 border-brand-orange text-white shadow-lg shadow-brand-orange/30' 
+                  : 'bg-brand-orange/15 border-brand-orange/30 text-brand-orange'
+              }`}>
+                {user.isAdmin ? <Crown className="w-8 h-8" /> : user.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h2 className="font-display font-bold text-lg text-gray-900">{user.name}</h2>
+                {user.isAdmin ? (
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-black uppercase tracking-wider bg-gradient-to-r from-brand-orange to-orange-600 text-white px-3 py-1 rounded shadow-md shadow-brand-orange/20">
+                    <Shield className="w-3 h-3" />
+                    Store Admin
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-mono font-black uppercase tracking-wider bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded">
+                    Shoe Enthusiast
+                  </span>
+                )}
+              </div>
             </div>
-            <div>
-              <h2 className="font-display font-bold text-lg text-gray-900">{user.name}</h2>
-              <span className="text-[10px] font-mono font-black uppercase tracking-wider bg-brand-orange/10 text-brand-orange px-2.5 py-0.5 rounded">
-                {user.isAdmin ? 'Store Admin' : 'Shoe Enthusiast'}
-              </span>
+
+          {/* Admin Banner */}
+          {user.isAdmin && (
+            <div className="bg-brand-orange/10 border border-brand-orange/20 rounded-xl p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <Shield className="w-6 h-6 text-brand-orange" />
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900">Administrator Panel Access</h3>
+                  <p className="text-xs text-gray-500">You have full access to manage the store's inventory, categories, and customer accounts.</p>
+                </div>
+              </div>
+              <Link
+                to="/admin"
+                className="w-full flex items-center justify-center gap-2 bg-brand-orange hover:bg-brand-orange-dark text-white font-bold py-3.5 rounded text-xs uppercase tracking-wider transition-all shadow-sm"
+              >
+                <Shield className="w-4 h-4" /> Go to Admin Dashboard
+              </Link>
             </div>
-          </div>
+          )}
 
           {/* Status Message */}
           {message.text && (
@@ -213,6 +254,63 @@ export const UserProfile: React.FC = () => {
               {viewedProducts.slice(0, 6).map(prod => (
                 <ProductCard key={prod.id} product={prod} />
               ))}
+            </div>
+          )}
+
+          {/* My Listed Kicks (Only show if not admin, or if they have products) */}
+          {(!user.isAdmin || myProducts.length > 0) && (
+            <div className="pt-8 border-t border-gray-100 space-y-6">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Package className="w-5 h-5 text-brand-orange" />
+                  <h2 className="font-display font-bold text-lg text-gray-900 uppercase tracking-wider">My Listed Kicks</h2>
+                </div>
+                <Link
+                  to="/sell"
+                  className="text-xs font-bold uppercase tracking-wider text-brand-orange hover:text-brand-orange-dark flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" /> New Drop
+                </Link>
+              </div>
+
+              {myProducts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-center py-10 px-4 bg-gray-50 border border-gray-200/60 rounded-xl space-y-3">
+                  <Package className="w-6 h-6 text-gray-400" />
+                  <p className="text-gray-500 text-sm max-w-xs font-sans">
+                    You haven't listed any shoes for sale yet.
+                  </p>
+                  <Link
+                    to="/sell"
+                    className="bg-brand-orange hover:bg-brand-orange-dark text-white font-bold text-xs uppercase tracking-wider px-5 py-2.5 rounded transition-colors"
+                  >
+                    Sell Your Shoes
+                  </Link>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {myProducts.map(prod => (
+                    <div key={prod.id} className="relative group">
+                      <ProductCard product={prod} />
+                      <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Link
+                          to={`/edit/${prod.id}`}
+                          className="p-1.5 bg-white text-gray-700 hover:text-brand-orange rounded-full shadow-md"
+                          title="Edit Listing"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteProduct(prod.id)}
+                          className="p-1.5 bg-white text-red-600 hover:text-white hover:bg-red-600 rounded-full shadow-md transition-colors"
+                          title="Delete Listing"
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

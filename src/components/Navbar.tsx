@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Heart, User, LogOut, LayoutDashboard, ShoppingBag, Package } from 'lucide-react';
+import { Menu, X, Heart, User, LogOut, LayoutDashboard, ShoppingBag, Package, Shield } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -14,9 +14,8 @@ export const Navbar: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = () => {
-    logout();
+    logout(navigate);
     setProfileDropdownOpen(false);
-    navigate('/');
   };
 
   const navLinks = [
@@ -81,6 +80,12 @@ export const Navbar: React.FC = () => {
                 >
                   <User className="w-4 h-4 text-brand-orange" />
                   <span className="max-w-[120px] truncate">{user.name}</span>
+                  {isAdmin && (
+                    <span className="flex items-center gap-1 bg-brand-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                      <Shield className="w-3 h-3" />
+                      Admin
+                    </span>
+                  )}
                 </button>
 
                 <AnimatePresence>
@@ -94,7 +99,15 @@ export const Navbar: React.FC = () => {
                     >
                       <div className="px-4 py-2 border-b border-[#262626]">
                         <p className="text-[10px] uppercase tracking-wider text-gray-500">Signed in as</p>
-                        <p className="text-sm font-bold truncate text-white">{user.email}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-bold truncate text-white">{user.email}</p>
+                          {isAdmin && (
+                            <span className="flex items-center gap-1 bg-brand-orange text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider whitespace-nowrap">
+                              <Shield className="w-2.5 h-2.5" />
+                              Admin
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {isAdmin && (
@@ -199,11 +212,20 @@ export const Navbar: React.FC = () => {
               ))}
 
               <div className="pt-4 border-t border-[#1f1f1f] space-y-2">
-                {user ? (
-                  <>
-                    <div className="px-3 py-2 text-sm text-gray-500">
-                      Signed in as <span className="font-bold text-white block">{user.email}</span>
-                    </div>
+                     {user ? (
+                   <>
+                     <div className="px-3 py-2 text-sm text-gray-500">
+                       Signed in as 
+                       <div className="flex items-center gap-2 mt-1">
+                         <span className="font-bold text-white block">{user.email}</span>
+                         {isAdmin && (
+                           <span className="flex items-center gap-1 bg-brand-orange text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider whitespace-nowrap">
+                             <Shield className="w-2.5 h-2.5" />
+                             Admin
+                           </span>
+                         )}
+                       </div>
+                     </div>
 
                     {isAdmin && (
                       <Link
@@ -236,7 +258,7 @@ export const Navbar: React.FC = () => {
 
                     <button
                       onClick={() => {
-                        handleLogout();
+                        logout(navigate);
                         setIsOpen(false);
                       }}
                       className="flex items-center gap-2 w-full text-left px-3 py-2.5 rounded-lg text-base font-medium text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"

@@ -4,6 +4,8 @@ export interface User {
   name: string;
   phone?: string;
   isAdmin: boolean;
+  isBlocked?: boolean;
+  profilePicture?: string;
   createdAt: string;
 }
 
@@ -47,4 +49,14 @@ export interface Review {
   comment: string;
   shoeType: string;
   date: string;
+}
+
+export interface Settings {
+  id?: string;
+  websiteName: string;
+  logoUrl?: string;
+  whatsappNumber?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  tiktokUrl?: string;
 }

@@ -7,7 +7,7 @@ import { Product } from '../types';
 
 export const ProductDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { products, wishlist, toggleWishlist, addToRecentlyViewed } = useApp();
+  const { user, products, wishlist, toggleWishlist, addToRecentlyViewed, deleteProduct } = useApp();
   const navigate = useNavigate();
 
   const [product, setProduct] = useState<Product | null>(null);
@@ -65,6 +65,20 @@ Is it still available?`;
     const whatsappUrl = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
   };
+
+  const handleDelete = async () => {
+    if (!product) return;
+    if (window.confirm('Are you sure you want to delete this listing? This action cannot be undone.')) {
+      try {
+        await deleteProduct(product.id);
+        navigate('/shop');
+      } catch (err: any) {
+        alert(err.message || 'Failed to delete product.');
+      }
+    }
+  };
+
+  const isOwnerOrAdmin = user && (user.isAdmin || user.id === product?.sellerId);
 
   if (loading) {
     return (
@@ -177,9 +191,29 @@ Is it still available?`;
           </div>
 
           {/* Product Name */}
-          <h1 className="font-display font-black text-2xl sm:text-4xl text-gray-900 tracking-tight leading-tight uppercase">
-            {product.name}
-          </h1>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <h1 className="font-display font-black text-2xl sm:text-4xl text-gray-900 tracking-tight leading-tight uppercase">
+              {product.name}
+            </h1>
+            
+            {/* Owner Actions */}
+            {isOwnerOrAdmin && (
+              <div className="flex items-center gap-2 shrink-0">
+                <Link
+                  to={`/edit/${product.id}`}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold uppercase rounded transition-colors border border-gray-200"
+                >
+                  Edit
+                </Link>
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-2 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white text-xs font-bold uppercase rounded transition-colors border border-red-200"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Pricing Row */}
           <div className="flex items-baseline gap-3 py-2 border-y border-gray-100">

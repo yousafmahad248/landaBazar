@@ -16,8 +16,15 @@ export const Shop: React.FC = () => {
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [maxPrice, setMaxPrice] = useState(250);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState('newest'); // newest, price-asc, price-desc
+
+  const maxAvailablePrice = useMemo(() => {
+    if (products.length === 0) return 250;
+    return Math.ceil(Math.max(...products.map(p => p.price)));
+  }, [products]);
+
+  const currentMaxPrice = maxPrice !== null ? maxPrice : maxAvailablePrice;
 
   // Mobile filters toggle
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -62,7 +69,7 @@ export const Shop: React.FC = () => {
     setSelectedSize('');
     setSelectedCondition('');
     setSelectedCategory('');
-    setMaxPrice(250);
+    setMaxPrice(null);
     setSortBy('newest');
     setSearchParams({});
   };
@@ -79,7 +86,7 @@ export const Shop: React.FC = () => {
           query === '' ||
           product.name.toLowerCase().includes(query) ||
           product.brand.toLowerCase().includes(query) ||
-          product.description.toLowerCase().includes(query);
+          (product.description || '').toLowerCase().includes(query);
 
         // Brand filter
         const matchesBrand = selectedBrand === '' || product.brand === selectedBrand;
@@ -94,7 +101,7 @@ export const Shop: React.FC = () => {
         const matchesCategory = selectedCategory === '' || product.categoryId === selectedCategory;
 
         // Price filter
-        const matchesPrice = product.price <= maxPrice;
+        const matchesPrice = product.price <= currentMaxPrice;
 
         // Special pre-route query filters
         const matchesSpecialFilter =
@@ -126,7 +133,7 @@ export const Shop: React.FC = () => {
         }
         return 0;
       });
-  }, [products, searchQuery, selectedBrand, selectedSize, selectedCondition, selectedCategory, maxPrice, sortBy, searchParams]);
+  }, [products, searchQuery, selectedBrand, selectedSize, selectedCondition, selectedCategory, currentMaxPrice, sortBy, searchParams]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-gray-900">
@@ -262,20 +269,20 @@ export const Shop: React.FC = () => {
           <div className="space-y-2.5 border-t border-gray-100 pt-4">
             <div className="flex items-center justify-between text-xs font-mono text-gray-400 uppercase">
               <span>Max Price</span>
-              <span className="text-gray-900 font-bold">${maxPrice}</span>
+              <span className="text-gray-900 font-bold">${currentMaxPrice}</span>
             </div>
             <input
               type="range"
               min="20"
-              max="250"
+              max={Math.max(250, maxAvailablePrice)}
               step="5"
-              value={maxPrice}
+              value={currentMaxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
               className="w-full accent-brand-orange bg-gray-200 h-1.5 rounded cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-gray-400 font-mono">
               <span>$20</span>
-              <span>$250</span>
+              <span>${Math.max(250, maxAvailablePrice)}</span>
             </div>
           </div>
 
@@ -438,14 +445,14 @@ export const Shop: React.FC = () => {
             <div className="space-y-2.5">
               <div className="flex items-center justify-between text-xs font-mono text-gray-400 uppercase">
                 <span>Max Price</span>
-                <span className="text-gray-900 font-bold">${maxPrice}</span>
+                <span className="text-gray-900 font-bold">${currentMaxPrice}</span>
               </div>
               <input
                 type="range"
                 min="20"
-                max="250"
+                max={Math.max(250, maxAvailablePrice)}
                 step="5"
-                value={maxPrice}
+                value={currentMaxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                 className="w-full accent-brand-orange bg-gray-200 h-1.5 rounded"
               />

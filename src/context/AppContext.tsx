@@ -4,30 +4,35 @@ import { apiRequest } from '../lib/api';
 
 interface AppContextProps {
   user: User | null;
-  token: string | null;
   products: Product[];
   categories: Category[];
   wishlist: string[]; // List of wishlisted product IDs
   recentlyViewed: string[]; // List of recently viewed product IDs
   loading: boolean;
   isAdmin: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, phone: string) => Promise<void>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<User>;
+  register: (name: string, email: string, password: string, phone: string) => Promise<User | undefined>;
+  logout: (navigate?: (path: string) => void) => Promise<void>;
   refreshProducts: () => Promise<void>;
   refreshCategories: () => Promise<void>;
   toggleWishlist: (productId: string) => Promise<void>;
   addToRecentlyViewed: (productId: string) => void;
-  updateProfile: (name: string, phone: string, email: string) => Promise<void>;
+  updateProfile: (name: string, phone: string, email: string, profilePicture?: string, password?: string) => Promise<void>;
   addProduct: (product: Omit<Product, 'id' | 'createdAt' | 'sellerId' | 'sellerName'>) => Promise<Product>;
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<Product>;
+  deleteProduct: (id: string) => Promise<void>;
   getUserProducts: () => Promise<Product[]>;
+  settings: any;
+  updateSettings: (settings: any) => Promise<void>;
+  updateCategory: (id: string, name: string) => Promise<void>;
+  blockUser: (id: string, isBlocked: boolean) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
@@ -38,16 +43,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return [];
     }
   });
+  const [settings, setSettings] = useState<any>({ websiteName: 'Thrifted Kicks' });
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Sync token to state & localStorage
+  // Check for existing Supabase session on mount
   useEffect(() => {
-    if (token) {
-      localStorage.setItem('token', token);
-    } else {
-      localStorage.removeItem('token');
-    }
-  }, [token]);
+    const checkSession = async () => {
+      try {
+        // Try to get current session from Supabase
+        const response = await apiRequest<User>('/api/auth/profile');
+        if (response) {
+          setUser(response);
+        }
+      } catch (err) {
+        // No active session
+        console.log('No active session found');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
+  }, []);
 
   // Initial Data Fetching
   const fetchInitialData = async () => {
@@ -61,17 +78,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const cats = await apiRequest<Category[]>('/api/categories');
       setCategories(cats);
 
-      // Fetch Profile & Wishlist if logged in
-      if (token) {
-        try {
-          const profile = await apiRequest<User>('/api/auth/profile');
-          setUser(profile);
+      // Fetch Settings
+      const sets = await apiRequest<any>('/api/settings');
+      setSettings(sets);
 
+      // Fetch Profile & Wishlist if logged in
+      if (user) {
+        try {
           const wish = await apiRequest<WishlistItem[]>('/api/wishlist');
           setWishlist(wish.map(item => item.productId));
         } catch (authErr) {
-          console.warn('Stale auth token, logging out:', authErr);
-          logout();
+          console.warn('Error fetching wishlist:', authErr);
         }
       }
     } catch (err) {
@@ -83,7 +100,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     fetchInitialData();
-  }, [token]);
+  }, [user]);
 
   const refreshProducts = async () => {
     try {
@@ -105,12 +122,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const login = async (email: string, password: string) => {
     try {
-      const data = await apiRequest<{ token: string; user: User }>('/api/auth/login', {
+      const data = await apiRequest<{ session: any; user: User }>('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password })
       });
-      setToken(data.token);
       setUser(data.user);
+      // Store authentication token
+      if (data.session?.access_token) {
+        localStorage.setItem('token', data.session.access_token);
+      }
+      // Store user email for dev token authentication
+      localStorage.setItem('userEmail', email);
+      return data.user;
     } catch (err: any) {
       throw new Error(err.message || 'Login failed');
     }
@@ -118,29 +141,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const register = async (name: string, email: string, password: string, phone: string) => {
     try {
-      const data = await apiRequest<{ token: string; user: User }>('/api/auth/register', {
+      const data = await apiRequest<{ message: string; user: User }>('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({ name, email, password, phone })
       });
-      setToken(data.token);
-      setUser(data.user);
+      // Note: User needs to confirm email before logging in
+      console.log(data.message);
+      // Return the user data anyway for UI feedback
+      return data.user;
     } catch (err: any) {
       throw new Error(err.message || 'Registration failed');
     }
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    setWishlist([]);
-    localStorage.removeItem('token');
+  const logout = async (navigate?: (path: string) => void) => {
+    try {
+      await apiRequest('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setUser(null);
+      setWishlist([]);
+      // Clear stored authentication data
+      localStorage.removeItem('token');
+      localStorage.removeItem('userEmail');
+      // Redirect to login page if navigate function is provided
+      if (navigate) {
+        navigate('/login');
+      }
+    }
   };
 
-  const updateProfile = async (name: string, phone: string, email: string) => {
+  const updateProfile = async (name: string, phone: string, email: string, profilePicture?: string, password?: string) => {
     try {
       const updatedUser = await apiRequest<User>('/api/auth/profile', {
         method: 'PUT',
-        body: JSON.stringify({ name, phone, email })
+        body: JSON.stringify({ name, phone, email, profilePicture, password })
       });
       setUser(updatedUser);
     } catch (err: any) {
@@ -197,6 +233,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return data;
   };
 
+  const updateProduct = async (id: string, updates: Partial<Product>): Promise<Product> => {
+    if (!user) throw new Error('You must be logged in to update a product');
+    
+    const data = await apiRequest<Product>(`/api/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+    await refreshProducts();
+    return data;
+  };
+
+  const deleteProduct = async (id: string): Promise<void> => {
+    if (!user) throw new Error('You must be logged in to delete a product');
+    
+    await apiRequest(`/api/products/${id}`, { method: 'DELETE' });
+    await refreshProducts();
+  };
+
   const getUserProducts = async (): Promise<Product[]> => {
     if (!user) {
       throw new Error('You must be logged in to view your products');
@@ -205,11 +259,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return await apiRequest<Product[]>('/api/user/products');
   };
 
+  const updateSettings = async (newSettings: any) => {
+    const updated = await apiRequest<any>('/api/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify(newSettings)
+    });
+    setSettings(updated);
+  };
+
+  const updateCategory = async (id: string, name: string) => {
+    await apiRequest(`/api/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name })
+    });
+    await refreshCategories();
+  };
+
+  const blockUser = async (id: string, isBlocked: boolean) => {
+    await apiRequest(`/api/admin/users/${id}/block`, {
+      method: 'PUT',
+      body: JSON.stringify({ isBlocked })
+    });
+  };
+
+  const deleteUser = async (id: string) => {
+    await apiRequest(`/api/admin/users/${id}`, {
+      method: 'DELETE'
+    });
+  };
+
   return (
     <AppContext.Provider
       value={{
         user,
-        token,
         products,
         categories,
         wishlist,
@@ -225,7 +307,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addToRecentlyViewed,
         updateProfile,
         addProduct,
-        getUserProducts
+        updateProduct,
+        deleteProduct,
+        getUserProducts,
+        settings,
+        updateSettings,
+        updateCategory,
+        blockUser,
+        deleteUser
       }}
     >
       {children}
