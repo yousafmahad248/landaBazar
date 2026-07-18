@@ -6,24 +6,33 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+let supabase: SupabaseClient;
+let supabaseAdmin: SupabaseClient;
+
 if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Supabase credentials missing! Please set SUPABASE_URL and SUPABASE_ANON_KEY in .env');
-  process.exit(1);
+  console.error('❌ Supabase credentials missing! Please set SUPABASE_URL and SUPABASE_ANON_KEY in Vercel Environment Variables.');
+  // Do not process.exit(1) as it crashes the Vercel function silently.
+  // Instead, create a dummy client that will fail if used, or just let it be undefined.
+  // We'll throw an error if db operations are attempted.
+} else {
+  // Regular client for normal operations (respects RLS)
+  supabase = createClient(supabaseUrl, supabaseKey);
+  console.log('✅ Supabase client initialized successfully!');
+  
+  // Admin client for seeding and admin operations (bypasses RLS)
+  supabaseAdmin = supabaseServiceKey 
+    ? createClient(supabaseUrl, supabaseServiceKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      })
+    : supabase;
 }
 
-// Regular client for normal operations (respects RLS)
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
-console.log('✅ Supabase client initialized successfully!');
+export { supabase, supabaseAdmin };
 
-// Admin client for seeding and admin operations (bypasses RLS)
-export const supabaseAdmin: SupabaseClient = supabaseServiceKey 
-  ? createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
-    })
-  : supabase;
+
 
 // Global Database API - Supabase Only
 export const db = {
