@@ -1,5 +1,5 @@
-// Use full URL to backend server
-const API_URL = 'http://localhost:3000';
+// Use relative URL to backend server so it works in any environment
+const API_URL = '';
 
 export async function apiRequest<T = any>(
   endpoint: string,
